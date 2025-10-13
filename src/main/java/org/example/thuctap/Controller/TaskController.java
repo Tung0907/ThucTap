@@ -1,22 +1,29 @@
 package org.example.thuctap.Controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.example.thuctap.Model.Task;
 import org.example.thuctap.Model.User;
 import org.example.thuctap.Repository.UserRepository;
-import org.example.thuctap.Security.JwtUtil;
 import org.example.thuctap.Service.TaskService;
+import org.example.thuctap.dto.*;
+import org.example.thuctap.exception.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskController.class);
 
     @Autowired
     private TaskService taskService;
@@ -24,108 +31,109 @@ public class TaskController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    // List:
-    // - ADMIN -> all tasks
-    // - USER -> only their tasks
+    // List: admin => all, user => own
     @GetMapping
-    public ResponseEntity<?> getAllTasks(Authentication authentication) {
-        String username = authentication.getName();
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
-
-        if (isAdmin) {
-            return ResponseEntity.ok(taskService.getAllTasks());
-        } else {
-            User user = userRepository.findByUsername(username);
-            if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            return ResponseEntity.ok(taskService.getTasksByUserId(user.getId()));
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getAll(Authentication auth) {
+        logger.info("GET /api/tasks by {}", auth.getName());
+        boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
+        List<Task> tasks;
+        if (isAdmin) tasks = taskService.getAllTasks();
+        else {
+            User user = userRepository.findByUsername(auth.getName());
+            if (user == null) throw new UnauthorizedException("User not found");
+            tasks = taskService.getTasksByUserId(user.getId());
         }
+        List<TaskResponse> res = tasks.stream().map(TaskResponse::fromEntity).collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Danh sách tasks"));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTaskById(@PathVariable Long id, Authentication authentication) {
-        String username = authentication.getName();
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
-
+    public ResponseEntity<ApiResponse<TaskResponse>> getById(@PathVariable Long id, Authentication auth) {
+        logger.info("GET /api/tasks/{} by {}", id, auth.getName());
+        boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
         if (isAdmin) {
-            Optional<Task> opt = taskService.getTaskById(id);
-            return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+            Task t = taskService.getTaskById(id).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại"));
+            return ResponseEntity.ok(ApiResponse.ok(TaskResponse.fromEntity(t), "OK"));
         } else {
-            User user = userRepository.findByUsername(username);
-            if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            Optional<Task> opt = taskService.getTaskByIdAndUserId(id, user.getId());
-            return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.FORBIDDEN).build());
+            User user = userRepository.findByUsername(auth.getName());
+            if (user == null) throw new UnauthorizedException("User not found");
+            Task t = taskService.getTaskByIdAndUserId(id, user.getId()).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại hoặc không thuộc về bạn"));
+            return ResponseEntity.ok(ApiResponse.ok(TaskResponse.fromEntity(t), "OK"));
         }
     }
 
     @PostMapping
-    public ResponseEntity<?> addTask(@RequestBody Task task, Authentication authentication) {
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username);
-        if (user == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        // Gắn user từ token đăng nhập
-        task.setUser(user);
-        // Tránh lỗi nếu frontend gửi user = null
-        Task saved = taskService.addTask(task);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-    }
+    public ResponseEntity<ApiResponse<TaskResponse>> createTask(@Valid @RequestBody TaskRequest req, BindingResult br, Authentication auth) {
+        logger.info("POST /api/tasks by {}", auth.getName());
+        if (br.hasErrors()) throw new BadRequestException("Dữ liệu không hợp lệ");
 
+        User user = userRepository.findByUsername(auth.getName());
+        if (user == null) throw new UnauthorizedException("User not found");
+
+        Task t = Task.builder()
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .status(req.getStatus() == null ? "PENDING" : req.getStatus())
+                .user(user)
+                .build();
+
+        Task saved = taskService.createFrom(t);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(TaskResponse.fromEntity(saved), "Task tạo thành công"));
+    }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateTask(@PathVariable Long id, @RequestBody Task taskDetails, Authentication authentication) {
-        String username = authentication.getName();
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(r -> r.equals("ADMIN"));
-        User user = userRepository.findByUsername(username);
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTask(@PathVariable Long id,
+                                                                @Valid @RequestBody TaskRequest req,
+                                                                BindingResult br,
+                                                                Authentication auth) {
+        logger.info("PUT /api/tasks/{} by {}", id, auth.getName());
+        if (br.hasErrors()) throw new BadRequestException("Dữ liệu không hợp lệ");
+
+        boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
+        User user = userRepository.findByUsername(auth.getName());
+        if (user == null) throw new UnauthorizedException("User not found");
 
         if (!isAdmin) {
-            // user chỉ được cập nhật task của chính họ
-            Optional<Task> opt = taskService.getTaskByIdAndUserId(id, user.getId());
-            if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-
-            taskDetails.setUser(user); // luôn giữ lại user hiện tại
-            Task updated = taskService.updateTask(id, taskDetails);
-            return ResponseEntity.ok(updated);
-
+            // xác nhận task thuộc user
+            Task existing = taskService.getTaskByIdAndUserId(id, user.getId()).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại hoặc không phải của bạn"));
+            // gán lại owner, giữ nguyên id
+            Task updated = Task.builder()
+                    .id(existing.getId())
+                    .title(req.getTitle())
+                    .description(req.getDescription())
+                    .status(req.getStatus() == null ? existing.getStatus() : req.getStatus())
+                    .user(user)
+                    .build();
+            Task saved = taskService.updateTask(id, updated);
+            return ResponseEntity.ok(ApiResponse.ok(TaskResponse.fromEntity(saved), "Cập nhật thành công"));
         } else {
-            // ✅ admin cập nhật bất kỳ task nào
-            // Nếu frontend không gửi user -> giữ nguyên user cũ
-            Optional<Task> existing = taskService.getTaskById(id);
-            if (existing.isPresent()) {
-                if (taskDetails.getUser() == null) {
-                    taskDetails.setUser(existing.get().getUser());
-                }
-            }
-            Task updated = taskService.updateTask(id, taskDetails);
-            return ResponseEntity.ok(updated);
+            // admin: can update any; if frontend không gởi owner -> giữ nguyên
+            Task existing = taskService.getTaskById(id).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại"));
+            Task toSave = Task.builder()
+                    .id(existing.getId())
+                    .title(req.getTitle())
+                    .description(req.getDescription())
+                    .status(req.getStatus() == null ? existing.getStatus() : req.getStatus())
+                    .user(existing.getUser()) // keep owner unless client passes new owner (we don't allow client to set owner here)
+                    .build();
+            Task saved = taskService.updateTask(id, toSave);
+            return ResponseEntity.ok(ApiResponse.ok(TaskResponse.fromEntity(saved), "Cập nhật thành công (admin)"));
         }
     }
 
-
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteTask(@PathVariable Long id, Authentication authentication) {
-        String username = authentication.getName();
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
-        User user = userRepository.findByUsername(username);
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<?> deleteTask(@PathVariable Long id, Authentication auth) {
+        logger.info("DELETE /api/tasks/{} by {}", id, auth.getName());
+        boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(r -> r.equals("ADMIN"));
+        User user = userRepository.findByUsername(auth.getName());
+        if (user == null) throw new UnauthorizedException("User not found");
 
         if (!isAdmin) {
-            Optional<Task> opt = taskService.getTaskByIdAndUserId(id, user.getId());
-            if (opt.isEmpty()) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            taskService.deleteTask(id);
-            return ResponseEntity.noContent().build();
+            taskService.getTaskByIdAndUserId(id, user.getId()).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại hoặc không thuộc về bạn"));
         } else {
-            taskService.deleteTask(id);
-            return ResponseEntity.noContent().build();
+            taskService.getTaskById(id).orElseThrow(() -> new ResourceNotFoundException("Task không tồn tại"));
         }
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
     }
 }

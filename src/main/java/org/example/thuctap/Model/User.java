@@ -1,6 +1,9 @@
 package org.example.thuctap.Model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Table(name = "[User]")
@@ -28,4 +31,8 @@ public class User {
 
     @Column(length = 20)
     private String role = "USER";
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Task> tasks;
 }

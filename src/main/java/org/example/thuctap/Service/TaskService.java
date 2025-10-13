@@ -32,6 +32,9 @@ public class TaskService {
     public Task addTask(Task task) {
         return taskRepository.save(task);
     }
+    public Task createFrom(Task task) {
+        return taskRepository.save(task);
+    }
 
     public Task updateTask(Long id, Task taskDetails) {
         return taskRepository.findById(id).map(task -> {
@@ -39,14 +42,15 @@ public class TaskService {
             task.setDescription(taskDetails.getDescription());
             task.setStatus(taskDetails.getStatus());
 
-            // Chỉ set user nếu có (tránh null xóa user cũ)
+            //  Giữ nguyên user cũ nếu frontend không gửi user mới
             if (taskDetails.getUser() != null) {
                 task.setUser(taskDetails.getUser());
             }
 
             return taskRepository.save(task);
-        }).orElse(null);
+        }).orElseThrow(() -> new RuntimeException("Task not found: " + id));
     }
+
 
 
     public void deleteTask(Long id) {

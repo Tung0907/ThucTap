@@ -41,8 +41,8 @@ async function loadTasks() {
             throw new Error("Lỗi khi lấy danh sách task: " + res.status);
         }
 
-        const tasks = await res.json();
-        renderTaskTable(tasks);
+        const result = await res.json();  // sửa ở đây
+        renderTaskTable(result.data);      // lấy mảng data
 
     } catch (err) {
         console.error("Lỗi loadTasks:", err);
@@ -50,15 +50,14 @@ async function loadTasks() {
     }
 }
 
+
 // ======== Hiển thị bảng Task ========
 function renderTaskTable(tasks) {
     const tbody = document.getElementById("taskTableBody");
     tbody.innerHTML = "";
 
     tasks.forEach(task => {
-        const userLabel = (task.user && (task.user.fullName || task.user.username))
-            ? (task.user.fullName || task.user.username)
-            : "N/A";
+        const userLabel = task.userFullName || task.userName || "N/A";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -83,6 +82,7 @@ function renderTaskTable(tasks) {
         b.addEventListener("click", e => deleteTask(e.target.dataset.id))
     );
 }
+
 
 // ======== Tạo mới hoặc Cập nhật Task ========
 async function saveTask() {
@@ -130,7 +130,9 @@ async function editTask(id) {
             return;
         }
 
-        const task = await res.json();
+        const result = await res.json();
+        const task = result.data; //  lấy đúng phần data
+
         document.getElementById("title").value = task.title || "";
         document.getElementById("description").value = task.description || "";
         document.getElementById("status").value = task.status || "PENDING";
@@ -142,6 +144,7 @@ async function editTask(id) {
         alert("Không thể tải Task để chỉnh sửa.");
     }
 }
+
 
 // ======== Xóa Task ========
 async function deleteTask(id) {

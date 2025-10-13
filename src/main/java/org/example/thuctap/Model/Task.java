@@ -1,4 +1,5 @@
 package org.example.thuctap.Model;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 @Entity
@@ -24,5 +25,6 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"password"})
     private User user;
 }
