@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký tài khoản</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .register-container {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            color: red;
+        }
+        .link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .link a {
+            text-decoration: none;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+<div class="register-container">
+    <h2>Đăng ký tài khoản</h2>
+    <input type="text" id="username" placeholder="Tên đăng nhập" required>
+    <input type="password" id="password" placeholder="Mật khẩu" required>
+    <button onclick="register()">Đăng ký</button>
+    <div class="message" id="message"></div>
+    <div class="link">
+        <a href="login.html">Đã có tài khoản? Đăng nhập</a>
+    </div>
+</div>
+
+<script>
+    async function register() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const messageDiv = document.getElementById('message');
+
+        if (!username || !password) {
+            messageDiv.innerText = "⚠️ Vui lòng nhập đầy đủ thông tin!";
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password })
+            });
+
+            const text = await response.text();
+            messageDiv.innerText = text;
+
+            if (response.ok) {
+                messageDiv.style.color = "green";
+                setTimeout(() => window.location.href = "login.html", 1500);
+            } else {
+                messageDiv.style.color = "red";
+            }
+        } catch (error) {
+            messageDiv.innerText = "❌ Lỗi kết nối đến server!";
+        }
+    }
+</script>
+</body>
+</html>

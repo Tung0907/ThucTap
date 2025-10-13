@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Task</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Quản Lý Task</h1>
+<button class="btn btn-danger float-end" onclick="logout()">Đăng xuất</button>
+<section id="task-form">
+    <h2>Thêm Task Mới</h2>
+    <input type="text" id="title" placeholder="Tiêu đề">
+    <input type="text" id="description" placeholder="Mô tả">
+    <select id="status">
+        <option value="PENDING">PENDING</option>
+        <option value="IN_PROGRESS">IN_PROGRESS</option>
+        <option value="DONE">DONE</option>
+    </select>
+    <select id="user">
+        <!-- load user tự động bằng JS -->
+    </select>
+    <button id="addTaskBtn">Thêm Task</button>
+</section>
+
+<section id="task-list">
+    <h2>Danh Sách Task</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tiêu đề</th>
+            <th>Mô tả</th>
+            <th>Trạng thái</th>
+            <th>Người dùng</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody id="taskTableBody"></tbody>
+    </table>
+</section>
+
+<script src="script.js"></script>
+<script>
+    // Kiểm tra xem người dùng đã đăng nhập chưa
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+        window.location.href = 'login.html';
+    }
+
+    // Hàm đăng xuất
+    function logout() {
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+    }
+</script>
+</body>
+</html>

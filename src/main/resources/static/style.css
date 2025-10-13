@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f8f8f8;
+    margin: 20px;
+    padding: 0;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+#task-form, #task-list {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+input, select, button {
+    padding: 10px;
+    margin: 5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+th {
+    background: #007bff;
+    color: white;
+}
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button + button {
+    margin-left: 5px;
+    background-color: #dc3545;
+}
+
+button + button:hover {
+    background-color: #a71d2a;
+}
+

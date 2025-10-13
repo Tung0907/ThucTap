@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            color: red;
+        }
+        .link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .link a {
+            text-decoration: none;
+            color: #28a745;
+        }
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>Đăng nhập</h2>
+    <input type="text" id="username" placeholder="Tên đăng nhập" required>
+    <input type="password" id="password" placeholder="Mật khẩu" required>
+    <button onclick="login()">Đăng nhập</button>
+    <div class="message" id="message"></div>
+    <div class="link">
+        <a href="register.html">Chưa có tài khoản? Đăng ký</a>
+    </div>
+</div>
+
+<script>
+    async function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const messageDiv = document.getElementById('message');
+
+        if (!username || !password) {
+            messageDiv.innerText = "⚠️ Vui lòng nhập đầy đủ thông tin!";
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password })
+            });
+
+            const text = await response.text();
+            messageDiv.innerText = text;
+
+            if (response.ok) {
+                messageDiv.style.color = "green";
+                // Chuyển sang trang chính sau 1.5s
+                setTimeout(() => window.location.href = "index.html", 1500);
+            } else {
+                messageDiv.style.color = "red";
+            }
+        } catch (error) {
+            messageDiv.innerText = "❌ Lỗi kết nối đến server!";
+        }
+    }
+</script>
+</body>
+</html>
