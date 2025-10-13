@@ -10,8 +10,8 @@ public class JwtInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String path = request.getRequestURI();
-        // Bỏ qua các public endpoints:
-        if (path.startsWith("/api/auth") || path.startsWith("/api/users") || path.startsWith("/login.html") || path.startsWith("/register.html")) {
+        // public endpoints
+        if (path.startsWith("/api/auth") || path.startsWith("/login.html") || path.startsWith("/register.html") || path.startsWith("/api/users") && request.getMethod().equalsIgnoreCase("POST")) {
             return true;
         }
 
@@ -27,7 +27,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             response.getWriter().write("Token không hợp lệ hoặc đã hết hạn");
             return false;
         }
-        // token OK -> tiếp tục
+        // token OK
         return true;
     }
 }

@@ -6,9 +6,11 @@ import org.example.thuctap.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -48,11 +50,12 @@ public class UserController {
 
     //  API Đăng ký
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> register(@RequestBody User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username đã tồn tại");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error","Username đã tồn tại"));
         }
-        User created = userService.addUser(user); // gọi service để mã hoá
-        return ResponseEntity.ok(created);
+        user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        User saved = userRepository.save(user);
+        return ResponseEntity.ok(saved);
     }
 }
