@@ -2,11 +2,14 @@ package org.example.thuctap.Security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class JwtInterceptor implements HandlerInterceptor {
+    @Autowired
+    private JwtUtil jwtUtil;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String path = request.getRequestURI();
@@ -22,7 +25,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             return false;
         }
         String token = auth.substring(7);
-        if (!JwtUtil.isTokenValid(token)) {
+        if (!jwtUtil.isTokenValid(token)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token không hợp lệ hoặc đã hết hạn");
             return false;

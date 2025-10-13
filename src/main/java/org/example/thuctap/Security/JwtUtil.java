@@ -3,56 +3,63 @@ package org.example.thuctap.Security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+
 @Component
 public class JwtUtil {
 
-    // secret và expiration sẽ đọc từ application.properties (static helper)
-    private static final String SECRET_BASE64 = System.getProperty("jwt.secret"); // fallback
-    private static final long EXP_MS = Long.parseLong(System.getProperty("jwt.expiration-ms", "86400000"));
+    @Value("${jwt.secret}")
+    private String secretBase64;
 
-    // nếu bạn muốn đọc từ Spring Environment: use @Value in a @Component class.
-    // For simplicity here, we'll fallback to a static secret if System property not set:
-    private static final String DEFAULT_SECRET_BASE64 = "Z2VuZXJhdGVkLXlvdXItYmFzZTY0LXNlY3JldC1mb3ItdGVzdHMxMjM0NTY=";
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
 
-    private static SecretKey getSigningKey() {
-        String keyBase64 = System.getProperty("jwt.secret") != null ? System.getProperty("jwt.secret") : DEFAULT_SECRET_BASE64;
-        byte[] keyBytes = Decoders.BASE64.decode(keyBase64);
-        return Keys.hmacShaKeyFor(keyBytes); // throws if not long enough -> good
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretBase64);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public static String generateToken(String username) {
+    public String generateToken(String username) {
         Date now = new Date();
-        Date exp = new Date(now.getTime() + EXP_MS);
-        return Jwts.builder()
+        Date exp = new Date(now.getTime() + expirationMs);
+        String token = Jwts.builder()
                 .setSubject(username)
+                .claim("username", username)
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+
+        System.out.println("==> [JwtUtil] Token generated for user: " + username);
+        return token;
     }
 
-    public static String extractUsername(String token) {
+    public String extractUsername(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+            System.out.println("==> [JwtUtil] Token claims: " + claims);
             return claims.getSubject();
         } catch (JwtException ex) {
+            System.out.println("==> [JwtUtil] Lỗi khi parse token: " + ex.getMessage());
             return null;
         }
     }
 
-    public static boolean isTokenValid(String token) {
+    public boolean isTokenValid(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
+            System.out.println("==> [JwtUtil] Token hợp lệ!");
             return true;
         } catch (JwtException ex) {
+            System.out.println("==> [JwtUtil] Token không hợp lệ: " + ex.getMessage());
             return false;
         }
     }

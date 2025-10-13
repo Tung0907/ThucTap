@@ -1,48 +1,66 @@
+// =========================
+// 📌 script.js - FIXED VERSION
+// =========================
+
 const API_BASE = "http://localhost:8080/api";
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadUsers();
+    checkLogin(); // kiểm tra token hợp lệ
     loadTasks();
-
     document.getElementById("addTaskBtn").addEventListener("click", saveTask);
 });
 
-let editId = null; // để biết đang sửa task nào
-
-async function loadUsers() {
-    const res = await fetch(`${API_BASE}/users`);
-    const users = await res.json();
-    const userSelect = document.getElementById("user");
-    userSelect.innerHTML = "";
-    users.forEach(u => {
-        const option = document.createElement("option");
-        option.value = u.id;
-        option.textContent = `${u.fullName} (${u.username})`;
-        userSelect.appendChild(option);
-    });
+// ------------------- Kiểm tra login -------------------
+function checkLogin() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        alert("Bạn cần đăng nhập trước!");
+        window.location.href = "login.html";
+    }
 }
 
-async function loadTasks() {
-    const res = await fetch(`${API_BASE}/tasks`);
-    const tasks = await res.json();
-    const tbody = document.getElementById("taskTableBody");
-    tbody.innerHTML = "";
+// ------------------- Hàm tạo header có token -------------------
+function getAuthHeaders() {
+    const token = localStorage.getItem("token");
+    return {
+        "Content-Type": "application/json",
+        "Authorization": token ? `Bearer ${token}` : ""
+    };
+}
 
-    tasks.forEach(task => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-      <td>${task.id}</td>
-      <td>${task.title}</td>
-      <td>${task.description}</td>
-      <td>${task.status}</td>
-      <td>${task.user ? task.user.fullName : "Không có"}</td>
-      <td>
-        <button onclick="editTask(${task.id})">Sửa</button>
-        <button onclick="deleteTask(${task.id})">Xóa</button>
-      </td>
-    `;
-        tbody.appendChild(tr);
-    });
+let editId = null;
+
+// ------------------- Load Tasks -------------------
+async function loadTasks() {
+    try {
+        const res = await fetch(`${API_BASE}/tasks`, { headers: getAuthHeaders() });
+        if (res.status === 403 || res.status === 401) {
+            logout();
+            return;
+        }
+
+        const tasks = await res.json();
+        const tbody = document.getElementById("taskTableBody");
+        tbody.innerHTML = "";
+
+        tasks.forEach(task => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${task.id}</td>
+                <td>${task.title}</td>
+                <td>${task.description}</td>
+                <td>${task.status}</td>
+                <td>${task.user ? task.user.fullName || task.user.username : "Không có"}</td>
+                <td>
+                    <button onclick="editTask(${task.id})">Sửa</button>
+                    <button onclick="deleteTask(${task.id})">Xóa</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("Lỗi loadTasks:", err);
+    }
 }
 
 // ------------------- Thêm hoặc cập nhật Task -------------------
@@ -50,19 +68,14 @@ async function saveTask() {
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
     const status = document.getElementById("status").value;
-    const userId = document.getElementById("user").value;
 
     if (!title || !description) {
         alert("Vui lòng nhập tiêu đề và mô tả!");
         return;
     }
 
-    const taskData = {
-        title,
-        description,
-        status,
-        user: { id: parseInt(userId) }
-    };
+    // ❌ Không gửi user nữa - backend tự lấy từ token
+    const taskData = { title, description, status };
 
     let method = "POST";
     let url = `${API_BASE}/tasks`;
@@ -72,22 +85,37 @@ async function saveTask() {
         url = `${API_BASE}/tasks/${editId}`;
     }
 
-    const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskData)
-    });
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: getAuthHeaders(),
+            body: JSON.stringify(taskData)
+        });
 
+        if (res.ok) {
+            alert(editId ? "Cập nhật thành công!" : "Thêm Task thành công!");
+            clearForm();
+            loadTasks();
+        } else {
+            alert("❌ Lỗi khi lưu Task!");
+        }
+    } catch (err) {
+        console.error("Lỗi saveTask:", err);
+    }
+}
+
+// ------------------- Sửa Task -------------------
+async function editTask(id) {
+    const res = await fetch(`${API_BASE}/tasks/${id}`, { headers: getAuthHeaders() });
     if (res.ok) {
-        alert(editId ? "Cập nhật thành công!" : "Thêm Task thành công!");
-        document.getElementById("title").value = "";
-        document.getElementById("description").value = "";
-        document.getElementById("status").value = "PENDING";
-        editId = null;
-        document.getElementById("addTaskBtn").textContent = "Thêm Task";
-        loadTasks();
+        const task = await res.json();
+        document.getElementById("title").value = task.title;
+        document.getElementById("description").value = task.description;
+        document.getElementById("status").value = task.status;
+        editId = task.id;
+        document.getElementById("addTaskBtn").textContent = "Cập nhật Task";
     } else {
-        alert("Lỗi khi lưu Task!");
+        alert("Không tải được Task!");
     }
 }
 
@@ -95,7 +123,11 @@ async function saveTask() {
 async function deleteTask(id) {
     if (!confirm("Bạn có chắc chắn muốn xóa task này không?")) return;
 
-    const res = await fetch(`${API_BASE}/tasks/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/tasks/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+    });
+
     if (res.ok) {
         alert("Xóa thành công!");
         loadTasks();
@@ -104,50 +136,18 @@ async function deleteTask(id) {
     }
 }
 
-// ------------------- Sửa Task -------------------
-async function editTask(id) {
-    const res = await fetch(`${API_BASE}/tasks/${id}`);
-    const task = await res.json();
-
-    document.getElementById("title").value = task.title;
-    document.getElementById("description").value = task.description;
-    document.getElementById("status").value = task.status;
-    document.getElementById("user").value = task.user ? task.user.id : "";
-
-    editId = task.id;
-    document.getElementById("addTaskBtn").textContent = "Cập nhật Task";
-}
-// Xử lý đăng ký
-const registerForm = document.getElementById('registerForm');
-if (registerForm) {
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const fullName = document.getElementById('fullName').value;
-        const email = document.getElementById('email').value;
-
-        const newUser = {
-            username,
-            password,
-            fullName,
-            email,
-            role: 'USER'
-        };
-
-        const res = await fetch('/api/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newUser)
-        });
-
-        if (res.ok) {
-            alert('Đăng ký thành công! Mời bạn đăng nhập.');
-            window.location.href = 'login.html';
-        } else {
-            alert('Tên đăng nhập đã tồn tại!');
-        }
-    });
+// ------------------- Xóa form -------------------
+function clearForm() {
+    document.getElementById("title").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("status").value = "PENDING";
+    editId = null;
+    document.getElementById("addTaskBtn").textContent = "Thêm Task";
 }
 
+// ------------------- Logout -------------------
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("currentUser");
+    window.location.href = "login.html";
+}

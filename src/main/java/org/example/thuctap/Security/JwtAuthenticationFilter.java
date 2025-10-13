@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
 @Component
@@ -35,13 +34,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String token;
         final String username;
 
+        System.out.println("==> [Filter] URL: " + request.getRequestURI());
+        System.out.println("==> [Filter] Header Authorization: " + authHeader);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("==> [Filter] Không có token hoặc sai định dạng!");
             filterChain.doFilter(request, response);
             return;
         }
 
         token = authHeader.substring(7);
         username = jwtUtil.extractUsername(token);
+        System.out.println("==> [Filter] Extracted username: " + username);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -51,6 +55,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println("==> [Filter] Authenticated user: " + username);
+            } else {
+                System.out.println("==> [Filter] Token không hợp lệ, không xác thực!");
             }
         }
 
