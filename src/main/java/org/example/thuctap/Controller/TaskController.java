@@ -25,9 +25,19 @@ public class TaskController {
     private JwtUtil jwtUtil;
 
     @GetMapping
-    public List<Task> getAllTasks() {
-        return taskService.getAllTasks();
+    public List<Task> getUserTasks(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            String username = jwtUtil.extractUsername(token);
+            User user = userRepository.findByUsername(username);
+            if (user != null) {
+                return taskService.getTasksByUser(user.getId());
+            }
+        }
+        return List.of();
     }
+
 
     @GetMapping("/{id}")
     public Optional<Task> getTaskById(@PathVariable Long id) {
