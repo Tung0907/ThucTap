@@ -50,9 +50,9 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("⚠️ Username đã tồn tại!");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username đã tồn tại");
         }
-        userRepository.save(user);
-        return ResponseEntity.ok("✅ Đăng ký thành công!");
+        User created = userService.addUser(user); // gọi service để mã hoá
+        return ResponseEntity.ok(created);
     }
 }

@@ -15,7 +15,6 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Dùng BCrypt để mã hoá mật khẩu
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public List<User> getAllUsers() {
@@ -35,7 +34,10 @@ public class UserService {
     public User updateUser(Long id, User userDetails) {
         return userRepository.findById(id).map(user -> {
             user.setUsername(userDetails.getUsername());
-            user.setPassword(passwordEncoder.encode(userDetails.getPassword())); // mã hoá luôn khi update
+            // Nếu muốn giữ mật khẩu cũ khi userDetails.password null, kiểm tra trước
+            if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+            }
             user.setFullName(userDetails.getFullName());
             user.setEmail(userDetails.getEmail());
             user.setRole(userDetails.getRole());

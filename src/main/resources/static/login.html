@@ -86,24 +86,24 @@
         }
 
         try {
-            const response = await fetch('/api/auth/login', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username, password })
             });
 
-            const text = await response.text();
-            messageDiv.innerText = text;
-
-            if (response.ok) {
-                messageDiv.style.color = "green";
-                // Chuyển sang trang chính sau 1.5s
-                setTimeout(() => window.location.href = "index.html", 1500);
+            if (res.ok) {
+                const data = await res.json();
+                // lưu token + user
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('currentUser', JSON.stringify({ username: data.username, role: data.role }));
+                window.location.href = 'index.html';
             } else {
-                messageDiv.style.color = "red";
+                const err = await res.text();
+                messageDiv.innerText = err;
             }
-        } catch (error) {
-            messageDiv.innerText = "❌ Lỗi kết nối đến server!";
+        } catch (e) {
+            messageDiv.innerText = 'Lỗi kết nối đến server';
         }
     }
 </script>

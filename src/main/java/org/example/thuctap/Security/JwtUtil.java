@@ -1,40 +1,37 @@
 package org.example.thuctap.Security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import java.util.Date;
 
 public class JwtUtil {
+    // Lưu ý: Đặt key ở application.properties hoặc biến môi trường trong production
+    private static final String SECRET_KEY = "mySecretKey1234567890"; // đổi cho an toàn
+    private static final long EXPIRATION_MS = 1000 * 60 * 60 * 24; // 24 giờ
 
-    private static final String SECRET_KEY = "mySecretKey123"; // có thể đổi tuỳ ý
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60; // 1 giờ
-
-    // Sinh token
     public static String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
                 .compact();
     }
 
-    // Lấy username từ token
     public static String extractUsername(String token) {
-        return getClaims(token).getSubject();
+        try {
+            Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+            return claims.getSubject();
+        } catch (JwtException e) {
+            return null;
+        }
     }
 
-    // Kiểm tra token hết hạn chưa
-    public static boolean isTokenExpired(String token) {
-        return getClaims(token).getExpiration().before(new Date());
-    }
-
-    // Parse token
-    private static Claims getClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
-                .parseClaimsJws(token)
-                .getBody();
+    public static boolean isTokenValid(String token) {
+        try {
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }

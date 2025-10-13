@@ -2,8 +2,10 @@ package org.example.thuctap.Controller;
 
 import org.example.thuctap.Model.User;
 import org.example.thuctap.Repository.UserRepository;
-import org.example.thuctap.Security.JwtUtil;
+import org.example.thuctap.Security.JwtUtil; // nếu dùng JWT
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,19 +22,25 @@ public class AuthController {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody User loginRequest) {
-        Map<String, Object> response = new HashMap<>();
-
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername());
-        if (user != null && passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            String token = JwtUtil.generateToken(user.getUsername());
-            response.put("message", "Đăng nhập thành công!");
-            response.put("token", token);
-            response.put("username", user.getUsername());
-            response.put("role", user.getRole());
-            return response;
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Sai tên đăng nhập hoặc mật khẩu!");
         }
-        response.put("message", "Sai tên đăng nhập hoặc mật khẩu!");
-        return response;
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Sai tên đăng nhập hoặc mật khẩu!");
+        }
+
+        // Nếu dùng JWT:
+        String token = JwtUtil.generateToken(user.getUsername());
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("message", "Đăng nhập thành công!");
+        res.put("token", token);
+        res.put("username", user.getUsername());
+        res.put("role", user.getRole());
+
+        return ResponseEntity.ok(res);
     }
 }
