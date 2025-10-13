@@ -4,6 +4,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -26,16 +27,13 @@ public class JwtUtil {
     public String generateToken(String username) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMs);
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .setSubject(username)
                 .claim("username", username)
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
-
-        System.out.println("==> [JwtUtil] Token generated for user: " + username);
-        return token;
     }
 
     public String extractUsername(String token) {
@@ -45,10 +43,8 @@ public class JwtUtil {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-            System.out.println("==> [JwtUtil] Token claims: " + claims);
             return claims.getSubject();
         } catch (JwtException ex) {
-            System.out.println("==> [JwtUtil] Lỗi khi parse token: " + ex.getMessage());
             return null;
         }
     }
@@ -56,11 +52,15 @@ public class JwtUtil {
     public boolean isTokenValid(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
-            System.out.println("==> [JwtUtil] Token hợp lệ!");
             return true;
         } catch (JwtException ex) {
-            System.out.println("==> [JwtUtil] Token không hợp lệ: " + ex.getMessage());
             return false;
         }
+    }
+
+    // validate against UserDetails
+    public boolean validateToken(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+        return username != null && username.equals(userDetails.getUsername()) && isTokenValid(token);
     }
 }

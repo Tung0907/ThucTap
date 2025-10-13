@@ -17,8 +17,16 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
+    public List<Task> getTasksByUserId(Long userId) {
+        return taskRepository.findByUserId(userId);
+    }
+
     public Optional<Task> getTaskById(Long id) {
         return taskRepository.findById(id);
+    }
+
+    public Optional<Task> getTaskByIdAndUserId(Long id, Long userId) {
+        return taskRepository.findByIdAndUser_Id(id, userId);
     }
 
     public Task addTask(Task task) {
@@ -30,16 +38,18 @@ public class TaskService {
             task.setTitle(taskDetails.getTitle());
             task.setDescription(taskDetails.getDescription());
             task.setStatus(taskDetails.getStatus());
-            task.setUser(taskDetails.getUser());
+
+            // Chỉ set user nếu có (tránh null xóa user cũ)
+            if (taskDetails.getUser() != null) {
+                task.setUser(taskDetails.getUser());
+            }
+
             return taskRepository.save(task);
         }).orElse(null);
     }
 
+
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
     }
-    public List<Task> getTasksByUser(Long userId) {
-        return taskRepository.findByUserId(userId);
-    }
-
 }

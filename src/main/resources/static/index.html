@@ -7,7 +7,8 @@
 </head>
 <body>
 <h1>Quản Lý Task</h1>
-<button class="btn btn-danger float-end" onclick="logout()">Đăng xuất</button>
+<button class="btn btn-danger" onclick="logout()">Đăng xuất</button>
+
 <section id="task-form">
     <h2>Thêm Task Mới</h2>
     <input type="text" id="title" placeholder="Tiêu đề">
@@ -17,15 +18,14 @@
         <option value="IN_PROGRESS">IN_PROGRESS</option>
         <option value="DONE">DONE</option>
     </select>
-    <select id="user">
-        <!-- load user tự động bằng JS -->
-    </select>
     <button id="addTaskBtn">Thêm Task</button>
 </section>
 
+<hr>
+
 <section id="task-list">
     <h2>Danh Sách Task</h2>
-    <table>
+    <table border="1" id="taskTable">
         <thead>
         <tr>
             <th>ID</th>
@@ -40,19 +40,19 @@
     </table>
 </section>
 
-<script src="script.js"></script>
-<script>
-    // Kiểm tra xem người dùng đã đăng nhập chưa
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser) {
-        window.location.href = 'login.html';
-    }
+<hr>
 
-    // Hàm đăng xuất
-    function logout() {
-        localStorage.removeItem('currentUser');
-        window.location.href = 'login.html';
-    }
-</script>
+<section id="user-section" style="display:none;">
+    <h2>Danh Sách Người Dùng (Admin)</h2>
+    <button onclick="loadUsers()">Tải danh sách người dùng</button>
+    <table border="1" id="userTable">
+        <thead>
+        <tr><th>ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</section>
+
+<script src="script.js"></script>
 </body>
 </html>
