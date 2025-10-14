@@ -55,4 +55,32 @@ public class AuthController {
                     .body(Map.of("error", "Lỗi server"));
         }
     }
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User newUser) {
+        try {
+            if (newUser.getUsername() == null || newUser.getUsername().isBlank()
+                    || newUser.getPassword() == null || newUser.getPassword().isBlank()
+                    || newUser.getEmail() == null || newUser.getEmail().isBlank()
+                    || newUser.getFullName() == null || newUser.getFullName().isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Vui lòng nhập đầy đủ Username, Password, Họ tên và Email!"));
+            }
+
+            if (userRepository.findByUsername(newUser.getUsername()) != null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Tên đăng nhập đã tồn tại!"));
+            }
+
+            newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
+            if (newUser.getRole() == null) newUser.setRole("USER"); // mặc định là USER
+            userRepository.save(newUser);
+
+            return ResponseEntity.ok("✅ Đăng ký thành công!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi server!"));
+        }
+    }
+
 }
