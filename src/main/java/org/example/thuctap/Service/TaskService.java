@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.*;
 
 @Service
 public class TaskService {
@@ -55,5 +56,23 @@ public class TaskService {
 
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    public Page<Task> getAllTasks(int page, int size, String status, String sortBy, String direction, boolean isAdmin, Long userId) {
+        Sort sort = direction.equalsIgnoreCase("asc") ?
+                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        if (isAdmin) {
+            if (status != null && !status.isEmpty())
+                return taskRepository.findByStatus(status, pageable);
+            else
+                return taskRepository.findAll(pageable);
+        } else {
+            if (status != null && !status.isEmpty())
+                return taskRepository.findByUserIdAndStatus(userId, status, pageable);
+            else
+                return taskRepository.findByUserId(userId, pageable);
+        }
     }
 }

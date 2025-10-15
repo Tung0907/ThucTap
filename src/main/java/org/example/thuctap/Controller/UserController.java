@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -51,5 +52,30 @@ public class UserController {
         u.setRole(req.getRole() == null ? "USER" : req.getRole().toUpperCase());
         User saved = userService.addUser(u);
         return ResponseEntity.status(HttpStatus.CREATED).body(org.example.thuctap.dto.UserResponse.fromEntity(saved));
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        if (!optionalUser.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = optionalUser.get();
+        user.setFullName(userDetails.getFullName());
+        user.setEmail(userDetails.getEmail());
+        user.setRole(userDetails.getRole());
+        userRepository.save(user);
+
+        return ResponseEntity.ok(user);
+    }
+
+    // Xóa user
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.deleteById(id);
+        return ResponseEntity.ok("Xóa Thành Công");
     }
 }

@@ -1,7 +1,11 @@
 package org.example.thuctap.Model;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.Date;
+
 @Entity
 @Table(name = "[Task]")
 @Getter
@@ -27,4 +31,13 @@ public class Task {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"password"})
     private User user;
+
+    @Column(name = "created_at", updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt = new Date();
+
+    @Column(name = "deadline")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date deadline;
+
 }

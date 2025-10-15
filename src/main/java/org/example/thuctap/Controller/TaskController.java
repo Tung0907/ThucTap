@@ -9,6 +9,7 @@ import org.example.thuctap.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -136,4 +137,28 @@ public class TaskController {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/paging")
+    public ResponseEntity<?> getTasksPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            Authentication auth
+    ) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        User user = userRepository.findByUsername(auth.getName());
+        if (user == null) throw new UnauthorizedException("User not found");
+
+        Page<Task> taskPage = taskService.getAllTasks(page, size, status, sortBy, direction, isAdmin, user.getId());
+
+        // map sang DTO
+        List<TaskResponse> taskResponses = taskPage.getContent().stream()
+                .map(TaskResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.ok(taskResponses, "OK", taskPage.getTotalElements(), taskPage.getTotalPages()));
+    }
+
 }

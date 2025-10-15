@@ -9,20 +9,51 @@
 <h1>Quản Lý Task</h1>
 <button class="btn btn-danger" onclick="logout()">Đăng xuất</button>
 
+<!-- Form thêm / sửa Task -->
 <section id="task-form">
-    <h2>Thêm Task Mới</h2>
+    <h2>Thêm / Sửa Task</h2>
     <input type="text" id="title" placeholder="Tiêu đề">
     <input type="text" id="description" placeholder="Mô tả">
+
     <select id="status">
         <option value="PENDING">PENDING</option>
         <option value="IN_PROGRESS">IN_PROGRESS</option>
         <option value="DONE">DONE</option>
     </select>
+
+    <input type="date" id="deadline" placeholder="Deadline">
+
     <button id="addTaskBtn">Thêm Task</button>
 </section>
 
 <hr>
 
+<!-- Bộ lọc và sắp xếp -->
+<section id="filter-sort">
+    <h3>Bộ lọc và Sắp xếp</h3>
+    <select id="filterStatus">
+        <option value="">-- Tất cả trạng thái --</option>
+        <option value="PENDING">PENDING</option>
+        <option value="IN_PROGRESS">IN_PROGRESS</option>
+        <option value="DONE">DONE</option>
+    </select>
+
+    <select id="sortBy">
+        <option value="createdAt">Ngày tạo</option>
+        <option value="deadline">Deadline</option>
+    </select>
+
+    <select id="sortDir">
+        <option value="asc">Tăng dần</option>
+        <option value="desc">Giảm dần</option>
+    </select>
+
+    <button onclick="applyFilter()">Lọc / Sắp xếp</button>
+</section>
+
+<hr>
+
+<!-- Danh sách Task -->
 <section id="task-list">
     <h2>Danh Sách Task</h2>
     <table border="1" id="taskTable">
@@ -33,6 +64,8 @@
             <th>Mô tả</th>
             <th>Trạng thái</th>
             <th>Người dùng</th>
+            <th>Ngày tạo</th>
+            <th>Deadline</th>
             <th>Hành động</th>
         </tr>
         </thead>
@@ -40,14 +73,25 @@
     </table>
 </section>
 
+<!-- Phân trang -->
+<div id="pagination" style="margin-top: 15px; text-align: center;"></div>
+
 <hr>
 
+<!-- Quản lý người dùng -->
 <section id="user-section" style="display:none;">
     <h2>Danh Sách Người Dùng (Admin)</h2>
     <button onclick="loadUsers()">Tải danh sách người dùng</button>
     <table border="1" id="userTable">
         <thead>
-        <tr><th>ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th></tr>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Hành động</th>
+        </tr>
         </thead>
         <tbody></tbody>
     </table>
