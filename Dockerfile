@@ -2,13 +2,19 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
+# Thiết lập encoding UTF-8 để tránh lỗi filter
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 # Copy POM và tải dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
 # Copy mã nguồn và build
 COPY src ./src
-RUN mvn clean package -DskipTests
+
+# Thêm encoding UTF-8 khi build
+RUN mvn clean package -DskipTests -Dproject.build.sourceEncoding=UTF-8
 
 # --- Giai đoạn 2: Chạy ứng dụng ---
 FROM eclipse-temurin:17-jdk
