@@ -3,7 +3,6 @@ package org.example.thuctap.Model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.Date;
 
 @Entity
@@ -34,10 +33,10 @@ public class Task {
 
     @Column(name = "created_at", updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt = new Date();
+    @org.hibernate.annotations.CreationTimestamp
+    private Date createdAt;
 
     @Column(name = "deadline")
     @Temporal(TemporalType.TIMESTAMP)
     private Date deadline;
-
 }
